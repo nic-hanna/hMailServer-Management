@@ -1,6 +1,6 @@
-# HMailServer-Management
+# hMailServer-Management
 
-This software creates a web server using NodeJS that interacts with hmailserver to allow regular users to change their own passwords without having to have admin access to hamilserver and with any users with admin access (who may not have access to the server) can change another person's password and create regular (non-admin) users.
+This software creates a web server using NodeJS that interacts with hMailServer to allow regular users to change their own passwords without having to have admin access to hMailServer and with any users with admin access (who may not have access to the server) can change another person's password and create regular (non-admin) users.
 
 ## Requirements
 - HMailServer
