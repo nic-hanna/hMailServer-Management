@@ -292,4 +292,3 @@ app.post('/logout', function(req, res) {
 });
 httpServer.listen(80);
 httpsServer.listen(443);
->>>>>>> Stashed changes
