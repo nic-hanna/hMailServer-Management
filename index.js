@@ -1,16 +1,37 @@
 const http = require('http');
+const https = require('https');
+const fs = require('fs');
 const express = require('express');
 const crypto = require('crypto');
 const app = express();
 var exec = require('child_process').exec, child;
-var mysql = require('mysql');
-var path = require('path');
-require('dotenv').config()
+const mysql = require('mysql');
+const path = require('path');
+const dotenv = require('dotenv').config()
 
 app.set('view engine', 'ejs');
-app.use(express.urlencoded());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname,'public')));
+app.use(requireHTTPS)
+
+const privateKey  = fs.readFileSync('sslcert/privkey.pem', 'utf8');
+const certificate = fs.readFileSync('sslcert/cert.pem', 'utf8');
+const credentials = {
+  key: privateKey,
+  cert: certificate
+};
+
+var httpServer = http.createServer(app);
+var httpsServer = https.createServer(credentials, app);
+
+function requireHTTPS(req, res, next) {
+  // The 'x-forwarded-proto' check is for Heroku
+  if (!req.secure && req.get('x-forwarded-proto') !== 'https' && process.env.NODE_ENV !== "development") {
+    return res.redirect('https://' + req.get('host') + req.url);
+  }
+  next();
+}
 
 'use strict';
 
@@ -34,7 +55,7 @@ const getCookies = (req) => {
         return parsedCookies;
     } else {
         return {};
-    }
+    } 
 };
 
 function verify(auth, callback){
@@ -50,16 +71,30 @@ function verify(auth, callback){
 }
 
 app.get('/', function(req, res) {
-    res.render('login');
+	cookies = getCookies(req);
+	if (cookies.hasOwnProperty('auth')) {
+		verify(cookies.auth, function(result) {
+			if (result == null || result == []) {
+				res.render('login', {
+					server: { name: process.env.SERVER_NAME }
+				});
+			} else {
+				res.redirect('/dashboard')
+			}
+		})
+	} else {
+		res.render('login');
+	}
 });
 
 app.post('/login', function(req, res) {
 	if (req.body.username.endsWith("@va-center.com")){
 		username = req.body.username;
 	} else {
-		username = req.body.username.split('@')[0] + '@va-center.com';
+		username = req.body.username.split('@')[0] + '@'+process.env.HMS_DOMAIN;
 	}
-	var auth = exec('cscript.exe /nologo login.vbs ' + HMS_CRED + ' ' + username + ' ' + req.body.password, function (error, stdout, stderr) {
+
+	exec('cscript.exe /nologo login.vbs ' + HMS_CRED + ' ' + username + ' ' + req.body.password, function (error, stdout, stderr) {
 		if (stdout.startsWith("-1")){
 			var token = crypto.randomBytes(16).toString('hex');
 			var sql = "INSERT INTO cookies (account, cookie) VALUES ('"+username+"', '"+token+"')";
@@ -79,7 +114,7 @@ app.post('/login', function(req, res) {
 				console.error(error);
 			}
 			console.log("Successful login using the account: "+username+" ("+token+")");
-			res.cookie('auth',token)
+			res.cookie('auth',token);
 			res.redirect('dashboard');
 		} else {
 			console.log("Invalid login attempt using the account: "+username);
@@ -98,11 +133,13 @@ app.get('/dashboard', function(req, res) {
 				exec('cscript.exe /nologo adminLevel.vbs ' + HMS_CRED + ' ' + result.account, function (error, stdout, stderr){
 					if (stdout.startsWith("1") || stdout.startsWith("2")){
 						res.render('adminDashboard', {
-							email: result.account
+							email: result.account,
+							server: { name: process.env.SERVER_NAME }
 						});
 					} else {
 						res.render('dashboard', {
-							email: result.account
+							email: result.account,
+							server: { name: process.env.SERVER_NAME }
 						});
 					}
 				});
@@ -121,7 +158,7 @@ app.post('/editPassword', function(req, res) {
 			if (result == null || result == []) {
 				res.redirect('/');
 			} else {
-				var auth = exec('cscript.exe /nologo password.vbs ' + HMS_CRED + ' ' + result.account + ' ' + req.body.password, function (error, stdout, stderr){
+				exec('cscript.exe /nologo password.vbs ' + HMS_CRED + ' ' + result.account + ' ' + req.body.password, function (error, stdout, stderr){
 					if (error == null) {
 						res.redirect("/dashboard")
 					} else {
@@ -146,7 +183,7 @@ app.post('/editPasswordAdmin', function(req, res) {
 				if (req.body.username.endsWith("@va-center.com")){
 					address = req.body.username;
 				} else {
-					address = req.body.username.split('@')[0] + '@va-center.com';
+					address = req.body.username.split('@')[0] + '@'+process.env.HMS_DOMAIN;
 				}
 				// Checks admin permissions
 				exec('cscript.exe /nologo adminLevel.vbs ' + HMS_CRED + ' ' + result.account, function (error, stdout, stderr){
@@ -206,13 +243,11 @@ app.post('/createUser', function(req, res) {
 			} else {
 				exec('cscript.exe /nologo adminLevel.vbs ' + HMS_CRED + ' ' + result.account, function (error, stdout, stderr){
 					if (stdout.startsWith("1") || stdout.startsWith("2")){
-						if (req.body.username.endsWith("@va-center.com")){
+						if (req.body.username.endsWith('@'+process.env.HMS_DOMAIN)){
 							address = req.body.username;
 						} else {
-							address = req.body.username.split('@')[0] + '@va-center.com';
+							address = req.body.username.split('@')[0] + '@'+process.env.HMS_DOMAIN;
 						}
-						console.log(address)
-						console.log(req.body.password)
 						exec('cscript.exe /nologo create.vbs ' + HMS_CRED + ' ' + address + ' ' + req.body.password, function (error, stdout, stderr){
 							if (error == null) {
 								console.log(stdout)
@@ -231,4 +266,30 @@ app.post('/createUser', function(req, res) {
 		res.redirect('/');
 	}
 });
-app.listen(80)
+
+app.post('/logout', function(req, res) {
+	cookies = getCookies(req);
+	if (cookies.hasOwnProperty('auth')) {
+		verify(cookies.auth, function(result) {
+			console.log(result.account + " has logged out (" + cookies.auth + ")");
+			if (result == null || result == []) {
+				res.redirect('/');
+			} else {
+				var sql = "DELETE FROM `cookies` WHERE `account` = '"+result.account+"'";
+				try {
+					con.query(sql, function (err, result) {
+						if (err) throw err;
+						res.redirect('/');
+					});
+				} catch (error) {
+					console.error(error);
+				}
+			}
+		});	
+	} else {
+		res.redirect('/');
+	}
+});
+httpServer.listen(80);
+httpsServer.listen(443);
+>>>>>>> Stashed changes
