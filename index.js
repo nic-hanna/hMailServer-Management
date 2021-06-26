@@ -59,7 +59,6 @@ app.post('/login', function(req, res) {
 	} else {
 		username = req.body.username.split('@')[0] + '@va-center.com';
 	}
-	console.log('cscript.exe /nologo login.vbs ' + HMS_CRED + ' ' + username + ' ' + req.body.password)
 	var auth = exec('cscript.exe /nologo login.vbs ' + HMS_CRED + ' ' + username + ' ' + req.body.password, function (error, stdout, stderr) {
 		if (stdout.startsWith("-1")){
 			var token = crypto.randomBytes(16).toString('hex');
