@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>VACenter Mail Management</title>
+
+    <!-- Stylesheets -->
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link href="css/dashboard.css" rel="stylesheet">
+	
+	<!-- Favicons -->
+	<link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
+	<link rel="manifest" href="/favicon/site.webmanifest">
+	<link rel="mask-icon" href="/favicon/safari-pinned-tab.svg" color="#5bbad5">
+	<link rel="shortcut icon" href="/favicon/favicon.ico">
+	<meta name="msapplication-TileColor" content="#2b5797">
+	<meta name="msapplication-config" content="/favicon/browserconfig.xml">
+	<meta name="theme-color" content="#ffffff">
+	
+	<script>
+	function checkPassword() {
+		password1 = document.getElementById("password1").value;
+		password2 = document.getElementById("password2").value;
+
+		// If password not entered
+		if (password1 == '') {
+			alert ("Please enter Password");
+			return false;
+		}
+		// If confirm password not entered
+		else if (password2 == '') {
+			alert ("Please enter confirm password");
+			return false;
+		}	  
+		// If Not same return False.    
+		else if (password1 != password2) {
+			alert ("Passwords did not match.")
+			return false;
+		}
+
+		// If same return True.
+		else {
+			return true;
+		}
+	}
+	</script>
+  </head>
+  <body class="text-center">
+	<main class="form-signin">
+		<img class="mb-4" src="images/logo.png" alt="" width="72" height="72">
+		<h1 class="h3 mb-3 fw-normal">VACenter Mail Management</h1>
+		<h4><%= email %></h4><br>
+		
+		
+		<form onsubmit="return checkPassword()" action="editPasswordAdmin" method="post">
+			<h5>Change Password</h5>
+			<div class="form-floating">
+			  <input type="username" name="username" class="form-control" placeholder="Username" required>
+			  <label>Username</label>
+			</div>
+			<div class="form-floating">
+			  <input type="password" id="password1" name="password" class="form-control" placeholder="New password" minlength="8" maxlength="30" required>
+			  <label>New Password</label>
+			</div>
+			<div class="form-floating">
+			  <input type="password" id="password2" class="form-control" placeholder="Confirm password" required>
+			  <label>Confirm Password</label>
+			</div><br>
+			<button class="w-100 btn btn-lg btn-primary" type="submit">Change Password</button>
+		</form><br><br>
+		
+		
+		<form action="createUser" method="post">
+			<h5>Create account</h5>
+			<div class="form-floating">
+			  <input type="username" name="username" class="form-control" placeholder="Username" required>
+			  <label>Username</label>
+			</div>
+			<div class="form-floating">
+			  <input type="password" name="password" class="form-control" placeholder="Password" required>
+			  <label>Password</label>
+			</div><br>
+			<button class="w-100 btn btn-lg btn-primary" type="submit">Create Account</button>
+		</form>
+		<p class="mt-5 mb-3 text-muted">&copy; 2021</p>
+	</main>
+  </body>
+</html>
