@@ -1694,6 +1694,7 @@
       "resolved": "https://registry.npmjs.org/readdirp/-/readdirp-3.6.0.tgz",
       "version": "3.6.0"
     },
+    "request": "^2.88.2",
     "require-in-the-middle": {
       "dependencies": {
         "debug": {

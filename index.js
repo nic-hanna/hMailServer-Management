@@ -40,25 +40,59 @@ var sqlCredentials = {
   database: process.env.DB_DB
 };
 
-function handleDisconnect() {
-  con = mysql.createConnection(sqlCredentials); // Recreate the connection, since
-                                                  // the old one cannot be reused.
+var con;
 
+con = mysql.createConnection(sqlCredentials);
+let sentErrorDisc = false;
+let startup = true;
+
+function handleDisconnect() {
+  con = mysql.createConnection(sqlCredentials); // Recreate the connection, since                                               // the old one cannot be reused.
   con.connect(function(err) {              // The server is either down
     if(err) {                                     // or restarting (takes a while sometimes).
-      console.log('error when connecting to db:', err);
-      setTimeout(handleDisconnect, 2000); // We introduce a delay before attempting to reconnect,
-    }                                     // to avoid a hot loop, and to allow our node script to
+      if (!sentErrorDisc){
+		newError("Database Disconnected", "Mail Server Management" );
+		sentErrorDisc = true;
+	  }
+      setTimeout(handleDisconnect, 10000); // We introduce a delay before attempting to reconnect,
+    } else {
+		if (!startup){
+			sentErrorDisc = false;
+			newError("Database issue resolved", "Mail Server Managmentment");
+		}
+	}
   });                                     // process asynchronous requests in the meantime.
                                           // If you're also serving http, display a 503 error.
   con.on('error', function(err) {
-    console.log('db error', err);
-    if(err.code === 'PROTOCOL_CONNECTION_LOST') { // Connection to the MySQL server is usually
-      handleDisconnect();                         // lost due to either server restart, or a
-    } else {                                      // connnection idle timeout (the wait_timeout
-      throw err;                                  // server variable configures this)
-    }
+    handleDisconnect();
   });
+  startup = false;
+}
+
+handleDisconnect()
+
+function newError(error, title) {
+    const requestSPECIAL = require('request');
+    const fsSPECIAL = require('fs');
+    const pathSPECIAL = require('path');
+    let errorB;
+    if(error instanceof Error){
+        errorB = error.toString()
+    }else if(typeof error == "object"){
+        errorB = JSON.stringify(error)
+    }else{
+        errorB = error;
+    }
+    const options2 = {
+        method: 'POST',
+        url: 'https://error.va-center.com/api/reportBug',
+        form: { title: title ? title : "AUTO - ERROR - " + config.name, body: errorB, contact: "Mail Server" }
+    };
+
+    requestSPECIAL(options2, function (error2, response2, body2) {
+        console.log("NEW REPORT")
+        console.log(options2.form)
+    })
 }
 
 const HMS_CRED = process.env.HMS_USER + " " + process.env.HMS_PASS + " " + process.env.HMS_DOMAIN
@@ -80,11 +114,14 @@ const getCookies = (req) => {
 function verify(auth, callback){
 	var sql = "SELECT * FROM `cookies` WHERE `cookie` = '"+auth+"'";
 	con.query(sql, function (err, result) {
-		if (err) throw err;
-		if (result != []){
-			return callback(result[0]);
+		if (err) {
+			newError("Attempted connection to mail server while database error exists", "Mail Server Management");
 		} else {
-			return callback([]);
+			if (result != []){
+				return callback(result[0]);
+			} else {
+				return callback([]);
+			}
 		}
 	});
 }
