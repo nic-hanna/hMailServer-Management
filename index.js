@@ -51,14 +51,14 @@ function handleDisconnect() {
   con.connect(function(err) {              // The server is either down
     if(err) {                                     // or restarting (takes a while sometimes).
       if (!sentErrorDisc){
-		newError("Database Disconnected", "Mail Server Management" );
+		//newError("Database Disconnected", "Mail Server Management" );
 		sentErrorDisc = true;
 	  }
       setTimeout(handleDisconnect, 10000); // We introduce a delay before attempting to reconnect,
     } else {
 		if (!startup){
 			sentErrorDisc = false;
-			newError("Database issue resolved", "Mail Server Managmentment");
+			//newError("Database issue resolved", "Mail Server Managmentment");
 		}
 	}
   });                                     // process asynchronous requests in the meantime.
@@ -71,29 +71,29 @@ function handleDisconnect() {
 
 handleDisconnect()
 
-function newError(error, title) {
-    const requestSPECIAL = require('request');
-    const fsSPECIAL = require('fs');
-    const pathSPECIAL = require('path');
-    let errorB;
-    if(error instanceof Error){
-        errorB = error.toString()
-    }else if(typeof error == "object"){
-        errorB = JSON.stringify(error)
-    }else{
-        errorB = error;
-    }
-    const options2 = {
-        method: 'POST',
-        url: 'https://error.va-center.com/api/reportBug',
-        form: { title: title ? title : "AUTO - ERROR - " + config.name, body: errorB, contact: "Mail Server" }
-    };
+// function newError(error, title) {
+//     const requestSPECIAL = require('request');
+//     const fsSPECIAL = require('fs');
+//     const pathSPECIAL = require('path');
+//     let errorB;
+//     if(error instanceof Error){
+//         errorB = error.toString()
+//     }else if(typeof error == "object"){
+//         errorB = JSON.stringify(error)
+//     }else{
+//         errorB = error;
+//     }
+//     const options2 = {
+//         method: 'POST',
+//         url: 'https://error.va-center.com/api/reportBug',
+//         form: { title: title ? title : "AUTO - ERROR - " + config.name, body: errorB, contact: "Mail Server" }
+//     };
 
-    requestSPECIAL(options2, function (error2, response2, body2) {
-        console.log("NEW REPORT")
-        console.log(options2.form)
-    })
-}
+//     requestSPECIAL(options2, function (error2, response2, body2) {
+//         console.log("NEW REPORT")
+//         console.log(options2.form)
+//     })
+// }
 
 const HMS_CRED = process.env.HMS_USER + " " + process.env.HMS_PASS + " " + process.env.HMS_DOMAIN
 
@@ -115,7 +115,7 @@ function verify(auth, callback){
 	var sql = "SELECT * FROM `cookies` WHERE `cookie` = '"+auth+"'";
 	con.query(sql, function (err, result) {
 		if (err) {
-			newError("Attempted connection to mail server while database error exists", "Mail Server Management");
+			//newError("Attempted connection to mail server while database error exists", "Mail Server Management");
 		} else {
 			if (result != []){
 				return callback(result[0]);
